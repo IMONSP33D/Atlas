@@ -1,0 +1,14 @@
+[project]
+name = "atlas-agent"
+version = "1.0.0"
+requires-python = ">=3.12"
+description = "Atlas in-VM guest agent"
+
+[project.optional-dependencies]
+screenshot = ["mss"]
+test = ["pytest", "pytest-asyncio"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
