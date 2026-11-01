@@ -30,8 +30,11 @@ atlas/
 │   └── images.example.yaml       image catalog (your VMs: runtime, alias, build, vmid, warm)
 ├── pyproject.toml                the daemon package (`pip install -e .[dev]`)
 ├── src/atlas/                    daemon: config, errors, auth, validation, sessions, API
-│   └── backends/                 Backend protocol + FakeBackend (Docker/Proxmox/CAPE to come)
-├── tests/                        contract tests; run with `pytest`
+│   ├── backends/                 Backend protocol; FakeBackend, DockerBackend, ProxmoxBackend
+│   ├── guest/protocol.py         virtio-serial frame codec (vendored into the guest agent)
+│   └── mock/                     mock Proxmox API + mock guest for offline development
+├── guest-agent/atlas_agent/      the in-VM agent (Python, stdlib only); `cd guest-agent && pytest`
+├── tests/                        contract + backend tests; run with `pytest`
 ├── scripts/
 │   ├── proxmox-host-setup.sh     bare-metal Proxmox host prep
 │   ├── atlas-keygen.py           generates word-seed API keys
@@ -42,7 +45,7 @@ atlas/
 │   ├── Dockerfile                polyglot image for the ephemeral tier
 │   └── runner.sh                 per-language entrypoint inside the container
 └── guest-agent/
-    └── README.md                 design of the in-VM agent (virtio-serial transport)
+    └── README.md                 protocol spec for the in-VM agent (virtio-serial transport)
 ```
 
 ## Running the daemon (no infra needed yet)
@@ -53,7 +56,8 @@ atlas keygen --name perseus-main              # --wordlist eff_large_wordlist.tx
 cp config/atlas.example.yaml atlas.yaml   # paste the hash in; cp images.example.yaml too
 atlas config check --config atlas.yaml --images images.yaml
 atlas serve --fake --no-tls --config atlas.yaml --images images.yaml  # scripted backend
-pytest                                                                 # 169 contract tests
+pytest                                                                 # ~300 tests, no infra needed
+atlas images validate --config atlas.yaml --images images.yaml        # once Proxmox exists
 ```
 
 `--fake` serves the full API contract against a scripted backend: every validation

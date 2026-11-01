@@ -45,10 +45,14 @@ Suggested implementation: Python (FastAPI + asyncio) or Go. Python gets you `pro
 Docker on the Atlas host. One container per call:
 
 ```
-docker run --rm --network none --memory 2g --cpus 2 --pids-limit 512 \
+docker run --name atlas-<uuid> --stop-timeout 2 --network none \
+  --memory 2g --cpus 2 --pids-limit 512 \
   --read-only --tmpfs /work:size=512m --tmpfs /tmp:size=256m \
   --security-opt no-new-privileges --cap-drop ALL \
-  -v <staged-files>:/work/in:ro  atlas-ephemeral:<tag>  <entrypoint>
+  -v <staged>/in:/work/in:ro  -v <staged>/code.<ext>:/work/code.<ext>:ro \
+  atlas-ephemeral:<tag>  <language> /work/code.<ext> [args...]
+# no --rm: Atlas inspects State.OOMKilled after exit, then `docker rm -f`.
+# runner.sh exits 101 on a compiler error -> EXEC_COMPILE_FAILED.
 ```
 
 - `--network none` unless the clamped policy says allow (then a dedicated bridge with egress allowlist via nftables, never the host network)
@@ -89,7 +93,7 @@ Two sources, both exposed through the same `screenshot` action:
 | `hypervisor` | QEMU monitor `screendump` via Proxmox API        | Works even if the guest is hung or at a UAC prompt; lower fidelity; no window targeting |
 | `guest`      | Guest agent captures via GDI/DXGI (Win) or scrot/grim (Linux) | Full fidelity, can target a window or region; needs a healthy guest |
 
-Default to `guest`, fall back to `hypervisor` automatically if the guest doesn't respond within 3 s, and tell the agent which one it got. Returned as base64 PNG, capped at 5 MB; larger images are downscaled.
+Default to `guest`, fall back to `hypervisor` automatically if the guest doesn't respond within 3 s, and tell the agent which one it got. The hypervisor path uses QEMU `screendump` to a file on the Proxmox node, so Atlas must run on that node (or share its `/tmp`). Returned as base64 PNG, capped at 5 MB; larger images are downscaled.
 
 ### 2.6 File ingress
 

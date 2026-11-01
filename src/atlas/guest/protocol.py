@@ -6,7 +6,7 @@
 - `type` is the verb (host→guest request) or event name (guest→host). Replies carry
   the request's `id` and `type: "<verb>.reply"` or `type: "error"`.
 - Unsolicited guest events (`heartbeat`, `exec_output`, `exec_done`) have `id: null`.
-- Max frame 4 MiB. File pushes are chunked (CHUNK_BYTES per put_file_chunk).
+- Max frame 8 MiB (room for a 5 MB screenshot after base64). File pushes are chunked (CHUNK_BYTES per put_file_chunk).
 
 This module has no dependencies beyond the stdlib on purpose: the in-VM agent
 vendors it, and the agent must not drag the daemon's deps into the golden image.
@@ -21,7 +21,7 @@ from typing import Any
 
 PROTOCOL_MAJOR = 1
 PROTOCOL_VERSION = "1.0"
-MAX_FRAME = 4 * 1024 * 1024
+MAX_FRAME = 8 * 1024 * 1024
 CHUNK_BYTES = 1 * 1024 * 1024          # raw bytes per put_file_chunk (~1.37 MiB after b64)
 HEARTBEAT_INTERVAL_SEC = 5
 _HDR = struct.Struct(">I")

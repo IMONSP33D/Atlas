@@ -3,6 +3,7 @@
     atlas config check  [--config atlas.yaml] [--images images.yaml]
     atlas serve         [--config ...] [--images ...] [--fake]
     atlas keygen --name perseus-main
+    atlas images validate [--config ...] [--images ...]
 """
 from __future__ import annotations
 
@@ -51,9 +52,18 @@ def cmd_serve(args: argparse.Namespace) -> int:
         fb = FakeBackend()
         backends = {rt: fb for rt in fb.runtimes}
     else:
-        # Real backends are wired here once they exist; until then --fake is the only option.
-        print("real backends not implemented yet; run with --fake", file=sys.stderr)
-        return 2
+        if cfg is None or cat is None:
+            print("real backends need a valid config; fix it or run with --fake", file=sys.stderr)
+            return 2
+        from .backends.docker import DockerBackend
+        backends = {"ephemeral": DockerBackend(cfg.ephemeral, cfg.limits)}
+        vm_entries = [e for e in cat.images if e.is_vm and e.enabled]
+        if vm_entries and cfg.proxmox is not None:
+            from .backends.proxmox import ProxmoxBackend
+            pve = ProxmoxBackend(cfg.proxmox, cfg.limits, cfg.screenshots, vm_entries,
+                                 host_reserve_mb=cfg.network.host_reserve_mb)
+            backends.update({"linux": pve, "windows": pve})
+        # cape: not implemented yet; /v1/cape/* answers CAPE_UNREACHABLE
     if err:
         print(f"CONFIG_INVALID: {err}; serving /v1/health only", file=sys.stderr)
     app = create_app(cfg, cat, backends, config_error=err)
@@ -63,6 +73,46 @@ def cmd_serve(args: argparse.Namespace) -> int:
         ssl = {"ssl_certfile": str(cfg.server.tls.cert), "ssl_keyfile": str(cfg.server.tls.key)}
     uvicorn.run(app, host=bind, port=port, **ssl)
     return 0
+
+
+def cmd_images_validate(args: argparse.Namespace, backend=None) -> int:
+    """Run ProxmoxBackend.validate_entry for every enabled VM entry; exit 1 on any problem."""
+    import asyncio
+
+    cfg, cat, err = _load(args)
+    if err:
+        print(f"CONFIG_INVALID: {err.path}", file=sys.stderr)
+        for p in err.problems:
+            print(f"  - {p}", file=sys.stderr)
+        return 1
+    assert cfg and cat
+    entries = [e for e in cat.images if e.is_vm and e.enabled]
+    if not entries:
+        print("no enabled linux/windows entries")
+        return 0
+    if backend is None:
+        from .backends.proxmox import ProxmoxBackend
+        backend = ProxmoxBackend(cfg.proxmox, cfg.limits, cfg.screenshots, entries,
+                                 host_reserve_mb=cfg.network.host_reserve_mb)
+
+    async def run() -> list[tuple]:
+        return [(e, await backend.validate_entry(e), await backend.entry_state(e)) for e in entries]
+
+    from .errors import AtlasError
+    try:
+        rows = asyncio.run(run())
+    except AtlasError as exc:
+        print(f"{exc.code}: {exc.notice.message}", file=sys.stderr)
+        return 1
+    print(f"{'RUNTIME':8} {'ID':14} {'VMID':>5} {'STATE':12} RESULT")
+    bad = 0
+    for e, problems, state in rows:
+        print(f"{e.runtime:8} {e.id:14} {e.vmid:>5} {state:12} {'ok' if not problems else 'FAIL'}")
+        for p in problems:
+            print(f"{'':42}- {p}")
+        bad += bool(problems)
+    print(f"\n{len(rows) - bad}/{len(rows)} entries ready")
+    return 1 if bad else 0
 
 
 def cmd_keygen(args: argparse.Namespace) -> int:
@@ -100,6 +150,9 @@ def main(argv: list[str] | None = None) -> int:
     ps.add_argument("--fake", action="store_true", help="scripted backend, no infra")
     ps.add_argument("--no-tls", action="store_true")
     ps.set_defaults(fn=cmd_serve)
+
+    pi = sub.add_parser("images"); s3 = pi.add_subparsers(dest="sub", required=True)
+    piv = s3.add_parser("validate"); common(piv); piv.set_defaults(fn=cmd_images_validate)
 
     pk = sub.add_parser("keygen")
     pk.add_argument("--name", required=True)
