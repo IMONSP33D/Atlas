@@ -50,14 +50,23 @@ RUN curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-p
     && chmod -R a+rwX /opt/rustup /opt/cargo
 
 # --- .NET SDK + C# + PowerShell -----------------------------------------
+# NuGet cache lives outside /root so the unprivileged `runner` user can read it,
+# and the SDK's writable state (HOME, telemetry, first-run) is pointed at the
+# /work tmpfs so `dotnet build` works under --read-only.
+ENV NUGET_PACKAGES=/opt/nuget \
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 \
+    DOTNET_NOLOGO=1 \
+    DOTNET_CLI_HOME=/work/.dotnet
 RUN curl -fsSL https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -o /tmp/ms.deb \
     && dpkg -i /tmp/ms.deb && rm /tmp/ms.deb \
     && apt-get update && apt-get install -y --no-install-recommends dotnet-sdk-8.0 powershell \
     && rm -rf /var/lib/apt/lists/* \
     # pre-warm a C# console template so offline `dotnet build` works
-    && mkdir -p /opt/dotnet-warm && cd /opt/dotnet-warm \
-    && dotnet new console -n warm --force >/dev/null && cd warm && dotnet build -c Release >/dev/null \
-    && rm -rf /opt/dotnet-warm && chmod -R a+rwX /root/.nuget 2>/dev/null || true
+    && mkdir -p /opt/nuget /opt/dotnet-warm && cd /opt/dotnet-warm \
+    && DOTNET_CLI_HOME=/tmp/dotnet-warm-home dotnet new console -n warm --force >/dev/null \
+    && cd warm && DOTNET_CLI_HOME=/tmp/dotnet-warm-home dotnet build -c Release >/dev/null \
+    && rm -rf /opt/dotnet-warm /tmp/dotnet-warm-home && chmod -R a+rX /opt/nuget
 
 # --- runner --------------------------------------------------------------
 # /runner <language> <entry-or-code-file>; prints to stdout/stderr, exits with program's code.
@@ -67,5 +76,6 @@ RUN chmod 755 /runner
 RUN useradd -m -u 1000 -s /bin/bash runner \
     && mkdir -p /work && chown runner:runner /work
 USER runner
+ENV HOME=/work
 WORKDIR /work
 ENTRYPOINT ["/runner"]

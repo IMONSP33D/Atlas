@@ -28,6 +28,10 @@ atlas/
 ├── config/
 │   ├── atlas.example.yaml        Atlas daemon configuration
 │   └── images.example.yaml       image catalog (your VMs: runtime, alias, build, vmid, warm)
+├── pyproject.toml                the daemon package (`pip install -e .[dev]`)
+├── src/atlas/                    daemon: config, errors, auth, validation, sessions, API
+│   └── backends/                 Backend protocol + FakeBackend (Docker/Proxmox/CAPE to come)
+├── tests/                        contract tests; run with `pytest`
 ├── scripts/
 │   ├── proxmox-host-setup.sh     bare-metal Proxmox host prep
 │   ├── atlas-keygen.py           generates word-seed API keys
@@ -40,6 +44,22 @@ atlas/
 └── guest-agent/
     └── README.md                 design of the in-VM agent (virtio-serial transport)
 ```
+
+## Running the daemon (no infra needed yet)
+
+```bash
+pip install -e '.[dev]'
+atlas keygen --name perseus-main              # --wordlist eff_large_wordlist.txt for 64-bit keys
+cp config/atlas.example.yaml atlas.yaml   # paste the hash in; cp images.example.yaml too
+atlas config check --config atlas.yaml --images images.yaml
+atlas serve --fake --no-tls --config atlas.yaml --images images.yaml  # scripted backend
+pytest                                                                 # 169 contract tests
+```
+
+`--fake` serves the full API contract against a scripted backend: every validation
+rule, session rule, idle timer, and error envelope behaves as in production, but
+"execution" just echoes code. Use it to build Perseus's `atlas_execute` tool before
+any Proxmox or Docker host exists. Real backends are added behind `src/atlas/backends/base.py`.
 
 ## Defined limits
 

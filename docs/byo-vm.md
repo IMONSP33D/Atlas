@@ -40,7 +40,7 @@ A VM is Atlas-ready when all of these hold. `atlas images validate` (planned) ch
 Whatever else is in the VM, the guest agent needs:
 
 - **Windows:** `vioserial` driver (from virtio-win), `C:\Atlas\agent\atlas-agent.exe` started at logon via scheduled task, running as the interactive user with highest privileges. Directories `C:\Atlas\in` and `C:\Atlas\work`.
-- **Linux:** the kernel's `virtio_console` module (in every mainline kernel), the agent as a systemd service running as an unprivileged user with read/write on `/dev/virtio-ports/org.atlas.agent` (udev rule), directories `/work/in` and `/work/work`. Xvfb or a real display if screenshots are wanted.
+- **Linux:** the kernel's `virtio_console` module (in every mainline kernel), the agent as a systemd service running as an unprivileged user with read/write on `/dev/virtio-ports/org.atlas.agent` (udev rule), directories `/work` (working dir) and `/work/in` (uploaded files), owned by the agent user. Xvfb or a real display if screenshots are wanted.
 
 See `guest-agent/README.md` for the protocol and `scripts/examples/` for complete install scripts.
 
