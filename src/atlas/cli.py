@@ -51,9 +51,12 @@ def cmd_serve(args: argparse.Namespace) -> int:
         fb = FakeBackend()
         backends = {rt: fb for rt in fb.runtimes}
     else:
-        # Real backends are wired here once they exist; until then --fake is the only option.
-        print("real backends not implemented yet; run with --fake", file=sys.stderr)
-        return 2
+        # Only the ephemeral (Docker) backend exists so far; VM runtimes stay unregistered.
+        if cfg is None:
+            print("real backends need a valid config; fix it or run with --fake", file=sys.stderr)
+            return 2
+        from .backends.docker import DockerBackend
+        backends = {"ephemeral": DockerBackend(cfg.ephemeral, cfg.limits)}
     if err:
         print(f"CONFIG_INVALID: {err}; serving /v1/health only", file=sys.stderr)
     app = create_app(cfg, cat, backends, config_error=err)
