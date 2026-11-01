@@ -147,15 +147,17 @@ next_steps() {
 2. Copy config/images.example.yaml -> ${ATLAS_ETC}/images.yaml.
 3. Build the ephemeral image on this host:
      docker build -t atlas-ephemeral:2026.11.1 ephemeral/
-4. Create VM templates (one per catalog entry). For each:
+4. Bring your own VMs (one per catalog entry; requirements in docs/byo-vm.md).
+   Example shape for a new one:
      qm create <vmid> --name atlas-win11-24h2 --memory 4096 --cores 4 \\
        --machine q35 --bios ovmf --efidisk0 local-zfs:1 --tpmstate0 local-zfs:1,version=v2.0 \\
        --scsihw virtio-scsi-single --scsi0 local-zfs:80,discard=on,ssd=1 \\
        --net0 none --serial0 socket \\
        --args "-chardev socket,path=/var/run/qemu-server/<vmid>.atlas,server=on,wait=off,id=atlas0 \\
                -device virtio-serial-pci -device virtserialport,chardev=atlas0,name=org.atlas.agent"
-   Install the OS, run scripts/build-golden-windows.ps1 (or build-golden-linux.sh)
-   inside it, shut down, then:
+   Install the OS and the guest agent so the VM meets docs/byo-vm.md
+   (scripts/examples/ has reference install scripts),
+   remove any NIC, shut down, then:
      qm snapshot <vmid> golden --vmstate 1
    (--vmstate 1 keeps RAM so 'warm' rollback is seconds, not a reboot.)
 5. Deploy the Atlas daemon into ${ATLAS_HOME} and: systemctl enable --now atlas

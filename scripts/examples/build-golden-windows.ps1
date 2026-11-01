@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Atlas: prepare a Windows VM to become a golden image.
+  Atlas (EXAMPLE, optional): one way to prepare a Windows VM that meets docs/byo-vm.md.
 
 .DESCRIPTION
   Run as Administrator inside a freshly installed Windows 10/11 VM on Proxmox

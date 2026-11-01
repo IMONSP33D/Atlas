@@ -1,4 +1,6 @@
 # Atlas image catalog. Copy to images.yaml.
+# Bring your own VMs: every linux/windows entry points at a VM YOU prepared to
+# the spec in docs/byo-vm.md. Atlas validates it on startup and never edits it.
 # One entry per (runtime, id). `warm: true` keeps the VM booted at the golden
 # snapshot between sessions. The dashboard can flip `warm` at runtime; this
 # file is the persisted state.
@@ -13,7 +15,7 @@ images:
 
   - runtime: windows
     id: win11-24h2
-    build: 10.0.26100.2314
+    build: 10.0.26100.2314                # your label; echoed to the agent, never verified
     vmid: 201
     default: true
     enabled: true

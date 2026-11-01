@@ -31,7 +31,7 @@ Every error is returned as `{ "code", "message", "data", "retryable", "suggested
 | `CODE_AND_ENTRYPOINT` | Both `code` and `entrypoint` given | fix_request |
 | `CODE_MISSING` | Neither `code` nor `entrypoint` given | fix_request |
 | `ENTRYPOINT_NOT_FOUND` | `entrypoint` doesn't name an uploaded file | fix_request |
-| `TIMEOUT_OUT_OF_RANGE` | `timeout_sec` < 1 or > 600 | fix_request |
+| `TIMEOUT_OUT_OF_RANGE` | `timeout_sec` < 1 or > 900 | fix_request |
 | `MODE_INVALID` | `mode` not execute/session, or `session` mode on ephemeral/cape | fix_request |
 | `SESSION_ID_INVALID` | Malformed session id | fix_request |
 | `NETWORK_SPEC_INVALID` | `network` not bool or `{allow:[...]}`, or allowlist entry not a hostname | fix_request |
@@ -56,7 +56,7 @@ Every error is returned as `{ "code", "message", "data", "retryable", "suggested
 | Code | HTTP | Meaning | Action |
 |------|------|---------|--------|
 | `SESSION_NOT_FOUND` | 404 | Unknown id; `data.reason` ∈ `never_existed`, `closed`, `idle_reverted`, `atlas_restarted`, `crashed` | new_session |
-| `SESSION_IDLE_REVERTED` | 409 | Session hit 30 min idle and was reverted; state is gone | new_session |
+| `SESSION_IDLE_REVERTED` | 409 | Session hit 15 min idle and was reverted; state is gone | new_session |
 | `SESSION_BUSY` | 409 | An execution is already running in this session (one at a time) | retry |
 | `SESSION_LIMIT` | 409 | 2 sessions already active; `data.active[]` | retry_later |
 | `RUNTIME_EXCLUSIVE` | 409 | A Windows session is active and Linux was requested, or vice versa; `data.blocking_session` | retry_later |
@@ -150,7 +150,7 @@ These are reported in `errors` with HTTP 200 because the request was valid and t
 
 | Code | When |
 |------|------|
-| `SESSION_IDLE_WARNING` | Idle ≥ 25 min; `data.seconds_remaining` |
+| `SESSION_IDLE_WARNING` | Idle ≥ 10 min; `data.seconds_remaining` |
 | `SESSION_IDLE_RESET` | Informational: this call reset the idle timer after a warning was issued |
 | `COLD_START` | Session opened on a cold entry; `data.boot_ms` |
 | `VERSION_DEFAULTED` | `version` omitted; `data.version` says what was chosen |

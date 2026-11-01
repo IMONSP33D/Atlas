@@ -36,9 +36,9 @@ Most agent traffic goes through `/v1/execute` alone; the session endpoints exist
     { "runtime": "cape",    "id": "cape-win10",   "build": "cape-2.4.1/win10-22h2", "state": "ready", "default": true }
   ],
   "limits": {
-    "max_timeout_sec": 600,
-    "session_idle_sec": 1800,
-    "session_idle_warn_sec": 1500,
+    "max_timeout_sec": 900,
+    "session_idle_sec": 900,
+    "session_idle_warn_sec": 600,
     "max_sessions": 2,
     "max_upload_bytes": 104857600,
     "max_files": 25
@@ -86,7 +86,7 @@ Field rules:
 - `mode` default `execute`. `execute` with no `session_id` = one-shot (ephemeral container, or VM session that auto-closes and reverts). `session` with no `session_id` = open a session and run; response carries the new `session_id`. Either mode with a `session_id` = run inside that session.
 - `language` picks the runner inside the guest. `binary` means `entrypoint` names a file from `files` to execute directly (Windows: `.exe`/`.msi`/`.bat`; Linux: executable bit set by Atlas).
 - `code` or `entrypoint` required, not both. `entrypoint` is a path relative to the input directory.
-- `timeout_sec` 1–600. Default 60.
+- `timeout_sec` 1–900. Default 60.
 - `network`: `false` | `true` | `{ "allow": ["pypi.org"] }`. Perseus has already clamped this to the human-set ceiling; Atlas enforces what it receives.
 - `files`: ≤ 25 entries, ≤ 100 MB total decoded. `sha256` optional but checked if present (`FILE_HASH_MISMATCH`).
 - `screenshot.source` `auto` = guest first, hypervisor fallback. VM runtimes only; ignored for ephemeral.
@@ -107,7 +107,7 @@ Field rules:
     "started_at": "2026-11-01T18:02:11Z",
     "last_activity_at": "2026-11-01T18:04:50Z",
     "idle_seconds": 0,
-    "idle_revert_in_seconds": 1800,
+    "idle_revert_in_seconds": 900,
     "executions": 3
   },
   "exit_code": 0,

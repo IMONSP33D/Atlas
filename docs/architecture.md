@@ -58,7 +58,7 @@ docker run --rm --network none --memory 2g --cpus 2 --pids-limit 512 \
 
 ### 2.3 VM tiers (`linux`, `windows`)
 
-Proxmox VE on bare metal. Each catalog entry is one VM template with a named golden snapshot (`golden`). A **session** is:
+Proxmox VE on bare metal. **The VMs are yours** (see `docs/byo-vm.md`): Atlas does not build or own images, it only requires that each registered VM has the guest agent, a virtio-serial port, no NIC, and a snapshot named `golden`. On startup Atlas validates every enabled catalog entry against those requirements and marks failures `unavailable` with a reason. A **session** is:
 
 1. Scheduler checks limits (concurrency, exclusivity) → may return `SESSION_LIMIT` / `RUNTIME_EXCLUSIVE`
 2. If the VM is **warm** (already booted and sitting at `golden` state), attach immediately
@@ -115,9 +115,9 @@ CAPE's own network routing (internet / inetsim / none) is set per call from the 
 
 | Limit                         | Value   | Behavior when hit |
 |-------------------------------|---------|-------------------|
-| Execution timeout (max)       | 10 min  | Process tree killed; `EXEC_TIMEOUT` |
-| Session idle                  | 30 min  | Session reverted; `SESSION_IDLE_REVERTED` on next call |
-| Idle warning                  | 25 min  | Any response after 25 min idle carries `warnings: ["SESSION_IDLE_WARNING"]` with seconds remaining |
+| Execution timeout (max)       | 15 min  | Process tree killed; `EXEC_TIMEOUT` |
+| Session idle                  | 15 min  | Session reverted; `SESSION_IDLE_REVERTED` on next call |
+| Idle warning                  | 10 min  | Any response after 10 min idle carries `warnings: ["SESSION_IDLE_WARNING"]` with seconds remaining |
 | Concurrent sessions           | 2       | `SESSION_LIMIT` |
 | Windows + Linux concurrently  | never   | `RUNTIME_EXCLUSIVE` |
 | Sessions on Atlas restart     | killed  | `SESSION_NOT_FOUND` with `reason: "atlas_restarted"` |

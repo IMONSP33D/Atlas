@@ -31,7 +31,7 @@ Guest agent has no "send file" verb. 100 MB cap per call, 25 files.
 **2026-11-01 — Screenshots: Windows (and Linux) VMs, guest-capture first, hypervisor screendump fallback.**
 Agent is told which source it got.
 
-**2026-11-01 — Limits: 10 min execution timeout, 30 min idle revert (warn at 25), 2 concurrent sessions, never Windows+Linux together, sessions killed on Atlas restart.**
+**2026-11-01 — Limits: 15 min execution timeout, 15 min idle revert (warn at 10), 2 concurrent sessions, never Windows+Linux together, sessions killed on Atlas restart.**
 
 **2026-11-01 — Warm/cold is operator config, shown and flippable on a simple dashboard.**
 Not agent-controllable.
@@ -45,14 +45,18 @@ Atlas submits and relays the report; it does not manage CAPE's machines. Dropped
 
 **2026-11-01 — Ephemeral image is polyglot:** Python, Node, PowerShell Core, .NET SDK, Rust, C, C++, C#, Go, Bash, plus common compilers and build tools, pre-baked so `network: false` still works for standard libraries.
 
+**2026-11-01 — Limits revised: 15 min max execution, 15 min idle revert, warning at 10 min idle.**
+Supersedes the 10/30/25 values. No hard session lifetime; idle only. Closes the earlier open question about what "10 minute limit" meant.
+
+**2026-11-01 — Atlas is bring-your-own-VM.**
+Atlas builds, licenses, and ships no OS images. You prepare Proxmox VMs to the spec in `docs/byo-vm.md` (guest agent, virtio-serial port, no NIC, `golden` snapshot) and register them in `images.yaml`. Atlas validates them on startup and drives them; it never modifies the golden snapshot. The golden-image scripts moved to `scripts/examples/` as optional references. The `ephemeral` Docker image is the one artifact Atlas still ships. Rules out: Atlas-managed image builds, Atlas verifying `build` strings, Atlas handling licensing. Also takes Windows licensing and Linux distro choice off Atlas's open-questions list — they're the VM owner's call.
+
 ## Open questions
 
-1. **"10 minute session limit" interpretation.** Docs assume 10 min = max per-execution timeout, and sessions have *no* hard lifetime, only the 30 min idle rule. If a hard session lifetime is wanted, pick a value and add `SESSION_LIFETIME_EXCEEDED`.
-2. **Windows licensing for golden images.** Eval ISOs expire in 90 days and nag; a retail/volume key per template is cleaner. Decide before building the first golden image, because the key is baked in.
-3. **Session persistence across Atlas restarts.** Decided no (kill all). Revisit only if restarts become frequent enough to annoy.
-4. **Multiple Perseus instances / multiple API keys.** Config supports a list of keys; whether each key gets its own rate limit and session quota is undecided.
-5. **Callback vs poll for CAPE.** Both supported in the contract; pick one as the primary path once Perseus's tool layer exists.
-6. **Dashboard scope.** "Nothing fancy": live sessions, warm/cold toggles, host RAM/CPU, last 50 executions, kill button. Decide whether it needs auth beyond LAN binding.
-7. **Linux VM images.** Which distros/versions go in the catalog first. Ubuntu 24.04 LTS is the assumed default.
-8. **GPU passthrough.** Not in scope for v1. If RunPod-style GPU work ever lands in Atlas, that's a separate catalog entry with PCIe passthrough.
-9. **Where Atlas runs relative to Perseus.** Same LAN assumed. If they ever split across networks, move to mTLS and a real cert (see architecture §5).
+1. **Session persistence across Atlas restarts.** Decided no (kill all). Revisit only if restarts become frequent enough to annoy.
+2. **Multiple Perseus instances / multiple API keys.** Config supports a list of keys; whether each key gets its own rate limit and session quota is undecided.
+3. **Callback vs poll for CAPE.** Both supported in the contract; pick one as the primary path once Perseus's tool layer exists.
+4. **Dashboard scope.** "Nothing fancy": live sessions, warm/cold toggles, host RAM/CPU, last 50 executions, kill button. Decide whether it needs auth beyond LAN binding.
+5. **`atlas images validate` depth.** The BYO spec says Atlas checks requirements 1–6 on startup. Decide whether a failed check disables the entry (current assumption) or just warns.
+6. **GPU passthrough.** Not in scope for v1. If RunPod-style GPU work ever lands in Atlas, that's a separate catalog entry with PCIe passthrough.
+7. **Where Atlas runs relative to Perseus.** Same LAN assumed. If they ever split across networks, move to mTLS and a real cert (see architecture §5).
