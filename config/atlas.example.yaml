@@ -19,11 +19,11 @@ auth:
       rate_limit_per_min: 120
 
 limits:
-  max_timeout_sec: 600
+  max_timeout_sec: 900
   default_timeout_sec: 60
-  session_idle_sec: 1800
-  session_idle_warn_sec: 1500
-  session_hard_lifetime_sec: 0           # 0 = none (see decisions.md #1)
+  session_idle_sec: 900
+  session_idle_warn_sec: 600
+  session_hard_lifetime_sec: 0           # 0 = none; idle only
   max_sessions: 2
   exclusive_runtimes: [[windows, linux]] # pairs that may not run at the same time
   max_upload_bytes: 104857600

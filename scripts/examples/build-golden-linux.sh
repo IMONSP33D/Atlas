@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Atlas: prepare an Ubuntu 24.04 VM to become a golden image.
+# Atlas (EXAMPLE, optional): one way to prepare an Ubuntu 24.04 VM that meets docs/byo-vm.md.
 # Run as root inside the VM with a temporary NIC attached. Remove the NIC,
 # shut down, then: qm snapshot <vmid> golden --vmstate 1
 set -euo pipefail
