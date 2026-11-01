@@ -134,8 +134,8 @@ These are reported in `errors` with HTTP 200 because the request was valid and t
 | `CAPE_TASK_NOT_FOUND` | Unknown task id | fix_request |
 | `CAPE_ANALYSIS_FAILED` | CAPE reported failure; `data.cape_status` | retry |
 | `CAPE_NO_MACHINE` | No analysis VM available; `data.retry_after_sec` | retry_later |
-| `CAPE_REPORT_TOO_LARGE` | Report exceeded 50 MB after stripping; summary returned, full report left on CAPE host | none |
-| `CAPE_CALLBACK_FAILED` | Perseus callback URL returned non-2xx; report still available via GET | none |
+| `CAPE_REPORT_TOO_LARGE` | (warning) Report exceeded 50 MB after stripping; summary returned, full report left on CAPE host | none |
+| `CAPE_CALLBACK_FAILED` | (warning) Perseus callback URL returned non-2xx; report still available via GET | none |
 
 ## Class K — Atlas internal (HTTP 500 / 503)
 
@@ -158,4 +158,6 @@ These are reported in `errors` with HTTP 200 because the request was valid and t
 | `EXEC_OUTPUT_TRUNCATED` | See Class E |
 | `SCREENSHOT_GUEST_FALLBACK` | See Class I |
 | `SCREENSHOT_DOWNSCALED` | See Class I |
+| `CAPE_REPORT_TOO_LARGE` | See Class J |
+| `CAPE_CALLBACK_FAILED` | See Class J |
 | `DEPRECATED_VERSION` | Catalog entry scheduled for removal; `data.removal_date` |

@@ -34,7 +34,7 @@ pip3 install --break-system-packages requests numpy pandas pillow mss
 
 log "atlas user + dirs"
 id atlas >/dev/null 2>&1 || useradd -m -s /bin/bash atlas
-mkdir -p /work/in /work/out /opt/atlas-agent
+mkdir -p /work/in /opt/atlas-agent   # no /work/out: files never leave the guest
 chown -R atlas:atlas /work
 cp -r "${AGENT_SRC}/." /opt/atlas-agent/
 
