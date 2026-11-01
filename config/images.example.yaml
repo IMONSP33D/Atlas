@@ -1,0 +1,56 @@
+# Atlas image catalog. Copy to images.yaml.
+# One entry per (runtime, id). `warm: true` keeps the VM booted at the golden
+# snapshot between sessions. The dashboard can flip `warm` at runtime; this
+# file is the persisted state.
+
+images:
+  - runtime: ephemeral
+    id: ephemeral
+    build: atlas-ephemeral:2026.11.1     # Docker image tag; the only "build" for this tier
+    default: true
+    enabled: true
+    languages: [python, node, powershell, bash, dotnet, csharp, rust, c, cpp, go, binary]
+
+  - runtime: windows
+    id: win11-24h2
+    build: 10.0.26100.2314
+    vmid: 201
+    default: true
+    enabled: true
+    warm: true
+    memory_mb: 4096
+    cores: 4
+    languages: [python, node, powershell, cmd, dotnet, csharp, rust, c, cpp, go, binary]
+    notes: "Interactive Session 1 auto-logon user 'atlas'. Visual Studio Build Tools 2022, Python 3.12, Node 22, .NET 8, Rust stable, Go 1.23."
+
+  - runtime: windows
+    id: win10-22h2
+    build: 10.0.19045.5131
+    vmid: 202
+    default: false
+    enabled: true
+    warm: false
+    memory_mb: 4096
+    cores: 4
+    languages: [python, node, powershell, cmd, dotnet, csharp, rust, c, cpp, go, binary]
+    deprecated: false
+    removal_date: null
+
+  - runtime: linux
+    id: ubuntu-24.04
+    build: 24.04.1+6.8.0-47
+    vmid: 301
+    default: true
+    enabled: true
+    warm: true
+    memory_mb: 2048
+    cores: 2
+    languages: [python, node, powershell, bash, dotnet, csharp, rust, c, cpp, go, binary]
+
+  - runtime: cape
+    id: cape-win10
+    build: cape-2.4.1/win10-22h2
+    default: true
+    enabled: true
+    cape_machine_tag: win10               # maps to CAPE's machinery config; Atlas does not own this VM
+    languages: [binary]

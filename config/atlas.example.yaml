@@ -1,0 +1,85 @@
+# Atlas daemon configuration. Copy to atlas.yaml and edit.
+# Secrets (API key hashes, Proxmox token) live here; chmod 600.
+
+server:
+  bind: 0.0.0.0
+  port: 8443
+  tls:
+    cert: /etc/atlas/tls/atlas.crt      # self-signed on first run if missing
+    key:  /etc/atlas/tls/atlas.key
+  request_body_limit_mb: 140             # 100 MB files + base64 overhead + headers
+
+auth:
+  # Generate with: scripts/atlas-keygen.py --name perseus-main
+  # Store the argon2id hash here; the plaintext is shown once.
+  keys:
+    - name: perseus-main
+      hash: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_ME"
+      revoked: false
+      rate_limit_per_min: 120
+
+limits:
+  max_timeout_sec: 600
+  default_timeout_sec: 60
+  session_idle_sec: 1800
+  session_idle_warn_sec: 1500
+  session_hard_lifetime_sec: 0           # 0 = none (see decisions.md #1)
+  max_sessions: 2
+  exclusive_runtimes: [[windows, linux]] # pairs that may not run at the same time
+  max_upload_bytes: 104857600
+  max_files: 25
+  max_output_bytes: 1048576              # per stream
+  max_screenshot_bytes: 5242880
+
+proxmox:
+  host: 10.0.0.10
+  port: 8006
+  token_id: "atlas@pve!atlas"
+  token_secret: "REPLACE_ME"
+  verify_tls: false                      # set true once you install a real cert on Proxmox
+  node: pve
+  storage: local-zfs
+  golden_snapshot_name: golden
+  virtio_socket_dir: /var/run/qemu-server # <vmid>.atlas socket per VM
+  guest_boot_timeout_sec: 120
+  guest_heartbeat_interval_sec: 5
+  guest_heartbeat_miss_limit: 6          # 30 s silent = GUEST_HUNG
+
+network:
+  egress_bridge: vmbr1                   # isolated bridge; NO route to the Atlas host or Perseus
+  dns_listen: 10.99.0.1                  # Atlas-run resolver, only answers allowlisted names
+  nft_table: atlas_egress
+  host_reserve_mb: 4096                  # refuse cold boots below this free RAM (HOST_RESOURCES)
+
+ephemeral:
+  image: atlas-ephemeral:2026.11.1
+  memory_mb: 2048
+  cpus: 2
+  pids_limit: 512
+  work_tmpfs_mb: 512
+
+cape:
+  enabled: true
+  api_base: http://10.0.0.20:8000/apiv2
+  api_token: "REPLACE_ME"
+  default_timeout_sec: 200
+  poll_interval_sec: 15
+  max_report_mb: 50
+  strip_sections: [dropped, procmemory, memory]
+
+screenshots:
+  default_source: auto
+  guest_timeout_sec: 3
+  format: png
+
+dashboard:
+  enabled: true
+  bind: 127.0.0.1                        # or a LAN IP; never 0.0.0.0 without auth
+  port: 8444
+  history_rows: 50
+
+logging:
+  path: /var/log/atlas/atlas.jsonl
+  level: info
+  log_code: false                        # log sha256 of code only
+  log_output: false                      # never log stdout/stderr by default
