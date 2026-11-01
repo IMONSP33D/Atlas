@@ -1,8 +1,6 @@
 # Atlas
 
-Atlas is a self-hosted code-execution backend for Perseus agents. An agent sends code (and optionally files) in a tool call; Atlas runs it in an isolated environment and returns the execution status, stdout/stderr, and optionally a screenshot. Nothing else comes back out.
-
-Atlas is a personal extension of Perseus. It will eventually be bundled with Perseus and other components into **Olympus**.
+Atlas is a self-hosted execution backend for a Perseus agent. An agent sends code (and optionally files) in a tool call; Atlas runs it in an isolated environment and returns the execution status, stdout/stderr, and optionally a screenshot. Nothing else comes back out.
 
 **Atlas is bring-your-own-VM.** It does not build, license, or ship OS images. You prepare Proxmox VMs that meet the requirements in `docs/byo-vm.md` (guest agent installed, virtio-serial port, no NIC, a `golden` snapshot), register them in `config/images.yaml`, and Atlas drives them: boot, run, revert. The only image Atlas ships is the `ephemeral` Docker container.
 
@@ -10,10 +8,10 @@ Atlas is a personal extension of Perseus. It will eventually be bundled with Per
 
 | Runtime     | What it is                                   | State            | Startup   |
 |-------------|----------------------------------------------|------------------|-----------|
-| `ephemeral` | Throwaway Linux container, polyglot toolchain (shipped) | None (per call)  | < 1 s     |
-| `linux`     | Your Linux VM on Proxmox, pinned build        | Session + revert | warm: ~3 s / cold: ~30 s |
-| `windows`   | Your Windows VM on Proxmox, pinned build      | Session + revert | warm: ~5 s / cold: ~60 s |
-| `cape`      | Your CAPE sandbox; Atlas relays the report    | None (per call)  | minutes   |
+| `ephemeral` | Throwaway code execution environment | None (per call)  | < 1 s     |
+| `linux`     | Linux VM on Proxmox, pinned build        | Session + revert | warm: ~3 s / cold: ~30 s |
+| `windows`   | Windows VM on Proxmox, pinned build      | Session + revert | warm: ~5 s / cold: ~60 s |
+| `cape`      | CAPE sandbox; Atlas relays the report    | None (per call)  | minutes   |
 
 ## Repository layout
 
@@ -43,7 +41,7 @@ atlas/
     └── README.md                 design of the in-VM agent (virtio-serial transport)
 ```
 
-## Hard limits (v1)
+## Defined limits
 
 - Max execution timeout: **15 min** per call
 - Session idle revert: **15 min** (warning emitted at 10 min)
@@ -52,7 +50,3 @@ atlas/
 - Files do not come back out; only status / output / screenshots
 - All sessions are killed on Atlas restart
 - Network: **off** by default; agent may request, Perseus policy clamps, Atlas enforces
-
-## Status
-
-Design phase. Nothing here is deployed yet. See `docs/decisions.md` for open items.
