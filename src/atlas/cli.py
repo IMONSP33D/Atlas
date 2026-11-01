@@ -52,12 +52,18 @@ def cmd_serve(args: argparse.Namespace) -> int:
         fb = FakeBackend()
         backends = {rt: fb for rt in fb.runtimes}
     else:
-        # Only the ephemeral (Docker) backend exists so far; VM runtimes stay unregistered.
-        if cfg is None:
+        if cfg is None or cat is None:
             print("real backends need a valid config; fix it or run with --fake", file=sys.stderr)
             return 2
         from .backends.docker import DockerBackend
         backends = {"ephemeral": DockerBackend(cfg.ephemeral, cfg.limits)}
+        vm_entries = [e for e in cat.images if e.is_vm and e.enabled]
+        if vm_entries and cfg.proxmox is not None:
+            from .backends.proxmox import ProxmoxBackend
+            pve = ProxmoxBackend(cfg.proxmox, cfg.limits, cfg.screenshots, vm_entries,
+                                 host_reserve_mb=cfg.network.host_reserve_mb)
+            backends.update({"linux": pve, "windows": pve})
+        # cape: not implemented yet; /v1/cape/* answers CAPE_UNREACHABLE
     if err:
         print(f"CONFIG_INVALID: {err}; serving /v1/health only", file=sys.stderr)
     app = create_app(cfg, cat, backends, config_error=err)

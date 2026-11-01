@@ -88,7 +88,7 @@ These are reported in `errors` with HTTP 200 because the request was valid and t
 |------|------|---------|--------|
 | `NETWORK_DENIED` | 403 | Request asked for network, Perseus clamp (or Atlas config) says no | ask_human |
 | `NETWORK_ALLOWLIST_REJECTED` | 403 | Hostnames requested aren't within the human-set allowlist; `data.rejected[]` | ask_human |
-| `NETWORK_UNAVAILABLE` | 503 | Policy permits network but the egress bridge/DNS is down; code was **not** run | retry_later |
+| `NETWORK_UNAVAILABLE` | 503 | Policy permits network but Atlas cannot provide it (egress bridge/DNS down, or NIC hot-attach / egress bridge not implemented in this build); code was **not** run; `data.reason` | retry_later |
 | `NETWORK_ATTACH_FAILED` | 500 | Could not hot-attach NIC to VM | retry |
 
 ## Class G — Guest / hypervisor (HTTP 500 / 503)
@@ -99,11 +99,11 @@ These are reported in `errors` with HTTP 200 because the request was valid and t
 | `GUEST_AGENT_PROTOCOL` | 500 | Malformed frame from guest; `data.detail` | retry |
 | `GUEST_AGENT_VERSION` | 500 | Guest agent version incompatible with Atlas; golden image needs rebuild | ask_human |
 | `GUEST_CRASHED` | 500 | VM stopped unexpectedly mid-execution; session reverted | new_session |
-| `GUEST_HUNG` | 500 | Guest stopped heartbeating during execution; forced revert | new_session |
+| `GUEST_HUNG` | 500 | Guest stopped heartbeating during execution, or an exec outlived `timeout_sec` + grace without `exec_done`; forced revert | new_session |
 | `VM_START_FAILED` | 503 | `qm start` failed; `data.proxmox_error` | retry_later |
 | `VM_SNAPSHOT_MISSING` | 500 | Catalog entry has no `golden` snapshot | ask_human |
 | `VM_ROLLBACK_FAILED` | 500 | Snapshot rollback failed; entry marked `unavailable` until fixed | ask_human |
-| `VM_UNAVAILABLE` | 503 | Entry disabled in config or failed health check; `data.reason` | downgrade |
+| `VM_UNAVAILABLE` | 503 | Entry disabled, held by a session, failed health check, or quarantined after a failed rollback; `data.reason` ∈ `disabled`, `busy`, `health_check` (+ `data.problems[]`), `rollback_failed`, `no_default` | downgrade |
 | `PROXMOX_UNREACHABLE` | 503 | Atlas can't reach the Proxmox API | ask_human |
 | `PROXMOX_AUTH` | 500 | Proxmox token rejected | ask_human |
 | `HOST_RESOURCES` | 503 | Host RAM/CPU below reserve; refusing to boot a cold VM; `data.free_mb` | downgrade |
@@ -123,7 +123,7 @@ These are reported in `errors` with HTTP 200 because the request was valid and t
 | `SCREENSHOT_GUEST_FALLBACK` | (warning) Guest didn't answer in 3 s; hypervisor screendump returned instead | none |
 | `SCREENSHOT_FAILED` | Both sources failed; `data.guest_error`, `data.hypervisor_error` | retry |
 | `SCREENSHOT_WINDOW_NOT_FOUND` | `window_title` matched nothing | fix_request |
-| `SCREENSHOT_DOWNSCALED` | (warning) Image exceeded 5 MB and was downscaled; `data.original_size` | none |
+| `SCREENSHOT_DOWNSCALED` | (warning) Image exceeded 5 MB and was downscaled; `data.original_size` = `{ width, height, bytes }` | none |
 
 ## Class J — CAPE (HTTP 4xx / 5xx / 200)
 

@@ -19,6 +19,10 @@ A VM is Atlas-ready when all of these hold. `atlas images validate` (planned) ch
 | 7 | Toolchains for every language you list under `languages:` in `images.yaml` are installed and on PATH for the agent's user | not checked; `LANGUAGE_UNSUPPORTED` is returned from config, `EXEC_SPAWN_FAILED` at runtime if you lied |
 | 8 | (Windows, if you want GUI/screenshots) the agent runs in an interactive session (Session 1) as an auto-logon user | `hello` reports `session_type` and `display`; Atlas warns if screenshots are requested on a VM without a display |
 
+## Validating a VM
+
+`atlas images validate` checks every enabled `linux`/`windows` entry against the list above plus two more: the virtio-serial chardev's socket path must be `<virtio_socket_dir>/<vmid>.atlas`, and a `warm: true` entry's `golden` snapshot must include RAM state (`qm snapshot <vmid> golden --vmstate 1`) so it resumes running after rollback. Entries with problems are reported `unavailable` in `/v1/images` with the reason.
+
 ## Registering a VM
 
 ```yaml
