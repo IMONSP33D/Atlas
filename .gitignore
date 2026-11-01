@@ -7,3 +7,4 @@ dist/
 .venv/
 /atlas.yaml
 /images.yaml
+.claude/worktrees/
