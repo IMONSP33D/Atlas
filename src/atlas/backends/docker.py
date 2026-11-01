@@ -49,6 +49,7 @@ DOCKER_COULD_NOT_START = 125
 KILL_GRACE_SEC = 5
 CONTROL_TIMEOUT_SEC = 15
 STATE_CACHE_SEC = 10.0
+_ENV_KEY = __import__("re").compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 # (argv, stdin_bytes, timeout_sec) -> (returncode, stdout, stderr)
 CommandRunner = Callable[[Sequence[str], "bytes | None", float], Awaitable["tuple[int, bytes, bytes]"]]
@@ -226,6 +227,9 @@ class DockerBackend:
         if code_file is not None:
             argv += ["-v", f"{code_file}:/work/{code_file.name}:ro"]
         for k, v in spec.env.items():
+            if not _ENV_KEY.match(k):
+                raise AtlasError("SCHEMA_INVALID", f"invalid environment variable name {k!r}",
+                                 field="env", detail="names must match [A-Za-z_][A-Za-z0-9_]*")
             argv += ["-e", f"{k}={v}"]
         if spec.stdin is not None:
             argv.append("-i")

@@ -6,8 +6,9 @@ The guest agent runs inside every `linux` and `windows` golden image. It is the 
 
 - Device: `/dev/virtio-ports/org.atlas.agent` (Linux), `\\.\Global\org.atlas.agent` (Windows, vioserial driver)
 - Host side: Unix socket `/var/run/qemu-server/<vmid>.atlas` created by the `-chardev socket` arg on the VM
-- Framing: 4-byte big-endian length + JSON payload (UTF-8). Max frame 4 MiB; file pushes are chunked.
-- One request in flight at a time. The guest also emits unsolicited `heartbeat` frames every 5 s.
+- Framing: 4-byte big-endian length + JSON payload (UTF-8). Max frame 8 MiB; file pushes are chunked. Codec: `src/atlas/guest/protocol.py` (vendored into the agent).
+- Payload shape: `{ "type", "id", ...fields }`. Requests carry a host-chosen `id`; replies are `type: "<verb>.reply"` or `type: "error"` with the same `id`; unsolicited guest events have `id: null`.
+- One request in flight at a time, except that `kill` and `ping` are accepted while an `exec` is running. The guest also emits unsolicited `heartbeat` frames every 5 s, including during an exec.
 
 ## Verbs (host → guest)
 
@@ -17,8 +18,8 @@ The guest agent runs inside every `linux` and `windows` golden image. It is the 
 | `put_file_begin` | `{ "name", "size", "sha256" }` | `{ "ok" }` |
 | `put_file_chunk` | `{ "name", "offset", "data_b64" }` | `{ "ok" }` |
 | `put_file_end` | `{ "name" }` | `{ "ok", "sha256" }` — agent verifies hash; mismatch → error |
-| `exec` | `{ "exec_id", "language", "code" \| "entrypoint", "args", "env", "stdin", "timeout_sec" }` | streamed: `exec_output` frames, then `exec_done` |
-| `kill` | `{ "exec_id" }` | `{ "ok" }` |
+| `exec` | `{ "exec_id", "language", "code" \| "entrypoint", "args", "env", "stdin", "timeout_sec" }` | immediate `{ "ok", "exec_id" }` ack (or `error` if an exec is already running), then streamed `exec_output` events and exactly one `exec_done` |
+| `kill` | `{ "exec_id" }` | `{ "ok", "killed": true\|false }` — `false` if that exec wasn't running |
 | `screenshot` | `{ "window_title", "region" }` | `{ "format", "width", "height", "data_b64" }` |
 | `ping` | `{}` | `{ "ok", "uptime_sec" }` |
 | `prepare_revert` | `{}` | `{ "ok" }` — flush logs; host rolls back right after |
@@ -27,7 +28,7 @@ The guest agent runs inside every `linux` and `windows` golden image. It is the 
 
 - `heartbeat` `{ "ts", "load", "mem_free_mb" }` every 5 s
 - `exec_output` `{ "exec_id", "stream": "stdout\|stderr", "data_b64" }` as output arrives (so timeouts still return partial output)
-- `exec_done` `{ "exec_id", "exit_code", "wall_time_ms", "cpu_time_ms", "peak_memory_bytes", "reason": "exit\|timeout\|killed\|oom\|spawn_failed\|compile_failed", "detail" }`
+- `exec_done` `{ "exec_id", "exit_code", "wall_time_ms", "cpu_time_ms", "peak_memory_bytes", "reason": "exit\|timeout\|killed\|oom\|spawn_failed\|compile_failed", "detail", "stdout_truncated", "stderr_truncated" }` — `exit_code` is `null` for `timeout`, `killed` and `spawn_failed`. Compiler diagnostics are streamed as `stderr`.
 
 ## What the agent deliberately cannot do
 

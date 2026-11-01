@@ -390,3 +390,12 @@ async def test_screenshot_unsupported(tmp_path):
     with pytest.raises(AtlasError) as ei:
         await b.screenshot(h, "auto", None, None)
     assert ei.value.code == "SCREENSHOT_UNSUPPORTED"
+
+
+async def test_env_key_validation(tmp_path):
+    """Env var names that could confuse argv are rejected before docker runs."""
+    fd = FakeDocker()
+    with pytest.raises(AtlasError) as ei:
+        await run(fd, tmp_path, spec(env={"BAD=KEY": "x"}))
+    assert ei.value.code == "SCHEMA_INVALID"
+    assert fd.sub("run") == []
