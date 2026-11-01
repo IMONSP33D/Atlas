@@ -56,3 +56,15 @@ The guest agent runs inside every `linux` and `windows` golden image. It is the 
 ## Implementation notes
 
 Python 3.12 with no third-party deps beyond `pywin32`/`mss` on Windows and `mss` on Linux is enough for v1; package with PyInstaller into `atlas-agent.exe` for Windows so the golden image doesn't depend on the system Python the agent's *jobs* use. Keep the agent under ~600 lines; it is a dumb pipe with a process supervisor.
+
+## Running locally
+
+The reference implementation is the stdlib-only package in `guest-agent/atlas_agent/` (Python 3.12+). In production `--channel` is the virtio char device; for development it also accepts a Unix socket path, in which case the agent connects to it as a client, so the host side must be the listener (QEMU's `-chardev socket,server=on` does this on a real VM; on a laptop use the fake host in `tests/fakehost.py`).
+
+```bash
+cd guest-agent
+python -m atlas_agent --channel /tmp/atlas.sock --workdir /tmp/atlas-work   # input dir defaults to <workdir>/in
+python -m pytest -q                                                         # needs pytest + pytest-asyncio
+```
+
+Notes: `protocol.py` in the package is a vendored copy of `src/atlas/guest/protocol.py` (a test enforces byte identity). `exec` is acknowledged immediately with `exec.reply {ok, exec_id}`; output and `exec_done` follow as events, which is what lets `kill` and `ping` be served mid-exec. Optional: `mss` (screenshots), `Pillow` (downscale oversized PNGs), `scrot`/`xdotool` on PATH as fallbacks.
